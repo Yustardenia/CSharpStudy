@@ -1,54 +1,25 @@
-using System.Text;
-
 public class Solution {
-    public int MyAtoi(string s)
+    public int MaxArea(int[] height)
     {
         int ans = 0;
-        bool isPos = true;
-        bool isFirst = true;
-        int x = 0;
-        foreach (var c in s)
+        int i = 0;
+        int j = height.Length - 1;
+        while (i < j)
         {
-            if (c == ' ' && isFirst)
+            int h = Math.Min(height[i], height[j]);
+            int s = j - i;
+            int area = h * s;
+            ans = Math.Max(ans, area);
+            if (h == height[i])
             {
-                continue;
-            }
-
-            if (c == '+' && isFirst)
-            {
-                isFirst = false;
-                continue;
-            }
-
-            if (c == '-' && isFirst)
-            {
-                isPos = false;
-                isFirst = false;
-                continue;
-            }
-
-            if (c > '9' || c < '0')
-            {
-                break;
+                i++;
             }
 
             else
             {
-                x = Int32.Parse(c.ToString());
-                isFirst = false;
-            }
-            if (ans > Int32.MaxValue / 10 ||(ans == Int32.MaxValue / 10 && x > 7))
-            {
-                return Int32.MaxValue;
+                j--;
             }
 
-            if (ans < Int32.MinValue / 10 ||(ans == Int32.MinValue / 10 && x > 8))
-            {
-                return Int32.MinValue;
-            }
-
-            ans = ans * 10 + (isPos ? x : -x); 
-            
         }
         return ans;
     }

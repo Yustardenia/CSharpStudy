@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regex DP Demo</title>
+<style>
+:root{
+  --bg:#f3efe7;
+  --panel:#fffaf2;
+  --line:#e7d7c3;
+  --ink:#201914;
+  --muted:#6f6257;
+  --accent:#b85c38;
+  --accent-soft:#f2d7c9;
+  --good:#2d7a54;
+  --good-soft:#dceee4;
+  --warn:#9c4f2e;
+  --focus:#1c6b74;
+  --code:#1d1a18;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:
+    radial-gradient(circle at top left, rgba(184,92,56,.10), transparent 28%),
+    radial-gradient(circle at top right, rgba(28,107,116,.10), transparent 26%),
+    linear-gradient(180deg, #f8f3ec 0%, var(--bg) 100%);
+  color:var(--ink);
+  font-family:"Microsoft YaHei UI","PingFang SC",sans-serif;
+}
+.page{max-width:1400px;margin:20px auto;padding:0 14px}
+.hero,.panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:22px;
+  box-shadow:0 14px 36px rgba(77,54,32,.09);
+}
+.hero{padding:24px 26px}
+.hero h1{margin:0 0 10px;font-size:30px}
+.hero p{margin:0;color:var(--muted);line-height:1.8}
+.tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.tag{
+  padding:7px 11px;border-radius:999px;
+  background:var(--accent-soft);color:var(--warn);font-size:12px
+}
+.layout{display:grid;grid-template-columns:330px 1fr 390px;gap:14px;margin-top:14px}
+.panel-inner{padding:16px}
+.sticky{position:sticky;top:16px;align-self:start}
+.section+.section{margin-top:16px;padding-top:16px;border-top:1px solid #eee1d4}
+.title{font-size:14px;color:var(--muted);margin-bottom:8px}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+textarea,input,button{font:inherit}
+textarea,input[type=text]{width:100%;padding:11px 12px;border-radius:14px;border:1px solid #decdbc;background:#fffdf9}
+textarea{min-height:74px;resize:vertical}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button{
+  border:0;border-radius:999px;padding:10px 14px;cursor:pointer;
+  transition:transform .16s ease, background .16s ease, opacity .16s ease
+}
+button:hover{transform:translateY(-1px)}
+.primary{background:var(--accent);color:#fff}
+.secondary{background:#efe2d1;color:var(--ink)}
+.ghost{background:#fff;border:1px solid #decdbc}
+.status{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.card,.box,.code-note-panel{
+  background:#fffdf9;border:1px solid #eee1d4;border-radius:18px;padding:14px
+}
+.value{font-size:24px;font-weight:800;margin-top:6px}
+.sub{font-size:13px;color:var(--muted);line-height:1.7}
+.explain-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin-top:14px}
+.table-wrap{overflow:auto;border-radius:18px;border:1px solid #e6d6c4;background:#fff}
+table{border-collapse:collapse;width:max-content;min-width:100%}
+th,td{
+  width:62px;height:58px;border:1px solid #eadccd;
+  text-align:center;vertical-align:middle;position:relative
+}
+th{
+  background:#f9f2e8;font-weight:700;color:#6d5a4a
+}
+.axis-label{background:#f5eadc;font-weight:700}
+.cell-true{background:var(--good-soft);color:var(--good);font-weight:800}
+.cell-false{background:#fff}
+.cell-current{outline:3px solid var(--focus);outline-offset:-3px;z-index:1}
+.cell-source{
+  box-shadow:inset 0 0 0 2px rgba(28,107,116,.30)
+}
+.tiny{
+  position:absolute;left:4px;top:4px;
+  font-size:10px;color:#8c7a6c
+}
+.logic{
+  background:linear-gradient(135deg,#fff7f0 0%,#fffdf8 100%);
+  border:1px solid #ecd9c4;border-radius:18px;padding:14px
+}
+.logic h3,.box h3,.code h3{margin:0 0 10px}
+.logic p,.logic li,.step-log,.rule,.legend,.error,.help{font-size:13px;line-height:1.75;color:var(--muted)}
+.rule-list{display:grid;gap:10px}
+.rule{
+  border-radius:16px;padding:12px;background:#f9f1e7;border:1px solid #ecdcc9
+}
+.legend{display:flex;gap:10px;flex-wrap:wrap}
+.dot{
+  display:inline-block;width:12px;height:12px;border-radius:999px;margin-right:6px;vertical-align:middle
+}
+.dot.true{background:var(--good)}
+.dot.current{background:var(--focus)}
+.dot.source{background:#9bc7cb}
+.steps{display:grid;gap:8px;max-height:320px;overflow:auto}
+.step{
+  padding:10px 12px;border-radius:14px;background:#f7efe4;border:1px solid #eadccd;opacity:.72
+}
+.step.active{opacity:1;transform:translateX(4px)}
+.step-title{font-weight:700;font-size:13px}
+.error{color:#a54433;min-height:20px}
+.code{
+  background:var(--code);color:#f4eadf;border:1px solid #2f2a25;border-radius:22px
+}
+.codeblock{margin-top:12px;border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden}
+.cline{
+  display:grid;grid-template-columns:42px 1fr;gap:10px;padding:4px 12px;
+  font-family:Consolas,monospace;font-size:12px;line-height:1.7;
+  border-top:1px solid rgba(255,255,255,.06)
+}
+.cline:first-child{border-top:0}
+.cline.active{background:rgba(184,92,56,.22);box-shadow:inset 3px 0 0 rgba(184,92,56,.65)}
+.cline.dim{opacity:.62}
+.no{text-align:right;color:rgba(255,255,255,.35)}
+.code-note{color:#c8b9aa;font-size:13px;line-height:1.7}
+.formula{
+  font-size:14px;line-height:1.8;background:#fffdf9;border:1px dashed #e2cfb8;padding:12px;border-radius:16px
+}
+@media(max-width:1180px){
+  .layout{grid-template-columns:330px 1fr}
+  .code{grid-column:1/-1}
+  .sticky{position:static}
+}
+@media(max-width:860px){
+  .layout,.status,.explain-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="hero">
+    <h1>10. 正则表达式匹配: 动态规划可视化</h1>
+    <p>这个页面专门用来教你怎么“看懂 dp”。我们把 <code>dp[i][j]</code> 定义、初始化、普通字符转移、<code>*</code> 的两种情况都拆开，让你能一步一步看到整张表是怎么长出来的。</p>
+    <div class="tags">
+      <span class="tag">dynamic programming</span>
+      <span class="tag">regex matching</span>
+      <span class="tag">step by step</span>
+      <span class="tag">C# code highlight</span>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel sticky">
+      <div class="panel-inner">
+        <div class="section">
+          <div class="title">输入</div>
+          <label for="sInput">字符串 s</label>
+          <input id="sInput" type="text" value="aab">
+          <label for="pInput" style="margin-top:10px">模式 p</label>
+          <input id="pInput" type="text" value="c*a*b">
+          <div class="help">支持小写字母、<code>.</code> 和 <code>*</code>。这个页面默认用 LeetCode 第 10 题规则。</div>
+        </div>
+
+        <div class="section">
+          <div class="title">示例</div>
+          <div class="btns">
+            <button class="secondary" data-sample="aa|a">aa / a</button>
+            <button class="secondary" data-sample="aa|a*">aa / a*</button>
+            <button class="secondary" data-sample="ab|.*">ab / .*</button>
+            <button class="secondary" data-sample="aab|c*a*b">aab / c*a*b</button>
+            <button class="secondary" data-sample="mississippi|mis*is*p*.">mississippi / mis*is*p*.</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="title">播放控制</div>
+          <div class="btns">
+            <button class="primary" id="buildBtn">生成步骤</button>
+            <button class="secondary" id="playBtn">自动播放</button>
+            <button class="ghost" id="stepBtn">下一步</button>
+            <button class="ghost" id="resetBtn">回到开头</button>
+          </div>
+          <div class="error" id="errorBox"></div>
+        </div>
+
+        <div class="section">
+          <div class="title">先记住这三个规则</div>
+          <div class="rule-list">
+            <div class="rule"><strong>状态定义</strong><br><code>dp[i][j]</code> 表示 <code>s</code> 前 <code>i</code> 个字符，能不能被 <code>p</code> 前 <code>j</code> 个字符完全匹配。</div>
+            <div class="rule"><strong>普通字符 / 点号</strong><br>当前字符能对上时，来自左上角：<code>dp[i-1][j-1]</code>。</div>
+            <div class="rule"><strong>星号</strong><br><code>x*</code> 可以当成 0 次：看 <code>dp[i][j-2]</code>；也可以多吃一个字符：看 <code>dp[i-1][j]</code>。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-inner">
+        <div class="status">
+          <div class="card">
+            <div class="title">当前格子</div>
+            <div class="value" id="cellValue">-</div>
+            <div class="sub" id="cellSub">先生成步骤</div>
+          </div>
+          <div class="card">
+            <div class="title">比较字符</div>
+            <div class="value" id="charValue">-</div>
+            <div class="sub" id="charSub">等待步骤</div>
+          </div>
+          <div class="card">
+            <div class="title">转移来源</div>
+            <div class="value" id="sourceValue">-</div>
+            <div class="sub" id="sourceSub">等待步骤</div>
+          </div>
+          <div class="card">
+            <div class="title">最终答案</div>
+            <div class="value" id="answerValue">-</div>
+            <div class="sub" id="answerSub">看右下角格子</div>
+          </div>
+        </div>
+
+        <div class="explain-grid">
+          <div class="table-wrap">
+            <table id="dpTable"></table>
+          </div>
+          <div class="logic">
+            <h3>当前解释</h3>
+            <div class="formula" id="formulaBox">点击“生成步骤”后，这里会解释为什么当前这个格子是 true 或 false。</div>
+            <p id="detailBox" style="margin-top:10px">这题难在 <code>*</code> 不是单独匹配自己，而是控制前一个字符重复多少次。</p>
+            <div class="legend" style="margin-top:12px">
+              <span><span class="dot true"></span>true</span>
+              <span><span class="dot current"></span>当前格子</span>
+              <span><span class="dot source"></span>转移来源</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="box" style="margin-top:14px">
+          <h3>步骤日志</h3>
+          <div class="steps" id="stepList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel code">
+      <div class="panel-inner">
+        <h3>C# 标准 DP 写法</h3>
+        <div class="code-note-panel">
+          <div class="code-note" id="codeExplain">当前步骤会高亮对应代码段，帮助你把“表格上的动作”和“代码里的 if/else”连起来。</div>
+        </div>
+        <div class="codeblock" id="codeBlock"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const codeLines = [
+"public class Solution",
+"{",
+"    public bool IsMatch(string s, string p)",
+"    {",
+"        int m = s.Length;",
+"        int n = p.Length;",
+"        bool[,] dp = new bool[m + 1, n + 1];",
+"",
+"        dp[0, 0] = true;",
+"",
+"        for (int j = 2; j <= n; j++)",
+"        {",
+"            if (p[j - 1] == '*')",
+"            {",
+"                dp[0, j] = dp[0, j - 2];",
+"            }",
+"        }",
+"",
+"        for (int i = 1; i <= m; i++)",
+"        {",
+"            for (int j = 1; j <= n; j++)",
+"            {",
+"                if (p[j - 1] == '.' || p[j - 1] == s[i - 1])",
+"                {",
+"                    dp[i, j] = dp[i - 1, j - 1];",
+"                }",
+"                else if (p[j - 1] == '*')",
+"                {",
+"                    dp[i, j] = dp[i, j - 2];",
+"",
+"                    if (p[j - 2] == '.' || p[j - 2] == s[i - 1])",
+"                    {",
+"                        dp[i, j] = dp[i, j] || dp[i - 1, j];",
+"                    }",
+"                }",
+"            }",
+"        }",
+"",
+"        return dp[m, n];",
+"    }",
+"}"
+];
+
+const $ = id => document.getElementById(id);
+const el = {
+  sInput: $("sInput"),
+  pInput: $("pInput"),
+  build: $("buildBtn"),
+  play: $("playBtn"),
+  step: $("stepBtn"),
+  reset: $("resetBtn"),
+  error: $("errorBox"),
+  dpTable: $("dpTable"),
+  stepList: $("stepList"),
+  cellValue: $("cellValue"),
+  cellSub: $("cellSub"),
+  charValue: $("charValue"),
+  charSub: $("charSub"),
+  sourceValue: $("sourceValue"),
+  sourceSub: $("sourceSub"),
+  answerValue: $("answerValue"),
+  answerSub: $("answerSub"),
+  formulaBox: $("formulaBox"),
+  detailBox: $("detailBox"),
+  codeExplain: $("codeExplain"),
+  codeBlock: $("codeBlock")
+};
+
+const state = {
+  steps: [],
+  index: 0,
+  timer: null,
+  data: null
+};
+
+function validateInput(s, p) {
+  if (s.length > 20 || p.length > 20) {
+    throw new Error("为了方便展示，这个页面要求 s 和 p 长度都不超过 20。");
+  }
+  if (!/^[a-z]*$/.test(s)) {
+    throw new Error("字符串 s 这里只接受小写字母。");
+  }
+  if (!/^[a-z.*]*$/.test(p)) {
+    throw new Error("模式 p 这里只接受小写字母、. 和 *。");
+  }
+  for (let i = 0; i < p.length; i++) {
+    if (p[i] === '*') {
+      if (i === 0 || p[i - 1] === '*') {
+        throw new Error("模式不合法：'*' 不能出现在开头，也不能连续出现。");
+      }
+    }
+  }
+}
+
+function emptyMatrix(rows, cols, value) {
+  return Array.from({ length: rows }, () => Array(cols).fill(value));
+}
+
+function snapshotDp(dp) {
+  return dp.map(row => row.slice());
+}
+
+function charMatch(sc, pc) {
+  return pc === '.' || sc === pc;
+}
+
+function buildSteps(s, p) {
+  validateInput(s, p);
+  const m = s.length;
+  const n = p.length;
+  const dp = emptyMatrix(m + 1, n + 1, false);
+  const steps = [];
+
+  dp[0][0] = true;
+  steps.push({
+    phase: "base",
+    i: 0,
+    j: 0,
+    value: true,
+    sources: [],
+    title: "初始化 dp[0][0]",
+    explain: "空字符串和空模式可以匹配，所以 dp[0][0] = true。",
+    detail: "这是整张 dp 表的起点。",
+    codeLines: [9],
+    codeText: "We seed the table with dp[0,0] = true."
+  });
+
+  for (let j = 2; j <= n; j++) {
+    if (p[j - 1] === '*') {
+      dp[0][j] = dp[0][j - 2];
+      steps.push({
+        phase: "empty-star",
+        i: 0,
+        j,
+        value: dp[0][j],
+        sources: [{ i: 0, j: j - 2 }],
+        title: `初始化 dp[0][${j}]`,
+        explain: `看到模式里的 '${p[j - 2]}*'，它可以把前一个字符用 0 次，所以 dp[0][${j}] 看 dp[0][${j - 2}]。`,
+        detail: `空串只能和“可以整体删掉”的模式匹配，比如 a*、a*b*、c*a*b*。当前结果是 ${dp[0][j] ? "true" : "false"}。`,
+        codeLines: [11,12,13,14,15,16],
+        codeText: "When p[j-1] is '*', empty string can inherit from dp[0, j-2]."
+      });
+    }
+  }
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const sc = s[i - 1];
+      const pc = p[j - 1];
+
+      if (pc === '.' || pc === sc) {
+        dp[i][j] = dp[i - 1][j - 1];
+        steps.push({
+          phase: "direct",
+          i,
+          j,
+          value: dp[i][j],
+          sources: [{ i: i - 1, j: j - 1 }],
+          title: `处理 dp[${i}][${j}]：普通匹配`,
+          explain: `当前 s 字符 '${sc}' 和 p 字符 '${pc}' 能直接匹配，所以看左上角 dp[${i - 1}][${j - 1}]。`,
+          detail: `普通字符或 '.' 都只能各自消耗一个字符，所以来源只有左上角。当前结果是 ${dp[i][j] ? "true" : "false"}。`,
+          codeLines: [23,24,25],
+          codeText: "Direct match or '.' means the cell inherits from dp[i-1, j-1]."
+        });
+      } else if (pc === '*') {
+        const zeroUse = dp[i][j - 2];
+        let multiUse = false;
+        let canRepeat = false;
+
+        if (j >= 2 && charMatch(sc, p[j - 2])) {
+          canRepeat = true;
+          multiUse = dp[i - 1][j];
+        }
+
+        dp[i][j] = zeroUse || multiUse;
+
+        steps.push({
+          phase: "star",
+          i,
+          j,
+          value: dp[i][j],
+          sources: canRepeat
+            ? [{ i, j: j - 2 }, { i: i - 1, j }]
+            : [{ i, j: j - 2 }],
+          title: `处理 dp[${i}][${j}]：星号匹配`,
+          explain: canRepeat
+            ? `当前是 '${p[j - 2]}*'。它可以不用，看 dp[${i}][${j - 2}]；也可以继续吃一个 '${sc}'，看 dp[${i - 1}][${j}]。`
+            : `当前是 '${p[j - 2]}*'，但 '${p[j - 2]}' 和 '${sc}' 对不上，所以只能把 '${p[j - 2]}*' 当成出现 0 次，去看 dp[${i}][${j - 2}]。`,
+          detail: canRepeat
+            ? `星号最核心就是“两条路”同时存在：0 次 or 多次。当前结果 = ${zeroUse} || ${multiUse} => ${dp[i][j]}.`
+            : `因为前一个字符和当前 s 字符不能匹配，星号这次没有资格“继续吃字符”，只剩下 0 次这条路。当前结果是 ${dp[i][j] ? "true" : "false"}。`,
+          codeLines: canRepeat ? [27,28,29,31,32,33,34] : [27,28,29,31,32,33,34],
+          codeText: "For '*', first try zero usage via dp[i, j-2], then optionally consume one more char via dp[i-1, j]."
+        });
+      } else {
+        dp[i][j] = false;
+        steps.push({
+          phase: "mismatch",
+          i,
+          j,
+          value: false,
+          sources: [],
+          title: `处理 dp[${i}][${j}]：无法匹配`,
+          explain: `当前 s 字符 '${sc}' 和 p 字符 '${pc}' 对不上，而且这里也不是 '*'，所以这个格子只能是 false。`,
+          detail: "普通字符匹配不上时，没有别的转移路径。",
+          codeLines: [23,27],
+          codeText: "Neither direct match nor '*' branch applies, so the cell remains false."
+        });
+      }
+    }
+  }
+
+  steps.push({
+    phase: "answer",
+    i: m,
+    j: n,
+    value: dp[m][n],
+    sources: [{ i: m, j: n }],
+    title: "查看最终答案",
+    explain: `右下角 dp[${m}][${n}] 就是最终答案：${dp[m][n]}.`,
+    detail: "因为它表示“整个字符串 s”能不能被“整个模式 p”完全匹配。",
+    codeLines: [39],
+    codeText: "The answer is the bottom-right cell dp[m, n]."
+  });
+
+  return { s, p, dp, steps };
+}
+
+function renderCode(lines, text) {
+  const active = new Set(lines);
+  el.codeBlock.innerHTML = "";
+  codeLines.forEach((line, idx) => {
+    const row = document.createElement("div");
+    row.className = "cline";
+    if (active.size > 0) {
+      row.classList.add(active.has(idx + 1) ? "active" : "dim");
+    }
+    row.innerHTML = `<div class="no">${idx + 1}</div><div>${line || " "}</div>`;
+    el.codeBlock.appendChild(row);
+  });
+  el.codeExplain.textContent = text;
+}
+
+function labelForPrefix(text, count) {
+  if (count === 0) {
+    return "∅";
+  }
+  return text[count - 1];
+}
+
+function renderTable() {
+  if (!state.data) {
+    el.dpTable.innerHTML = "";
+    return;
+  }
+  const { s, p, dp } = state.data;
+  const current = state.steps[state.index];
+  const sourceKey = new Set((current.sources || []).map(pos => `${pos.i},${pos.j}`));
+  let html = "<tr><th class='axis-label'>dp</th><th class='axis-label'>∅</th>";
+  for (let j = 1; j <= p.length; j++) {
+    html += `<th>${p[j - 1]}</th>`;
+  }
+  html += "</tr>";
+
+  for (let i = 0; i <= s.length; i++) {
+    html += `<tr><th class='axis-label'>${labelForPrefix(s, i)}</th>`;
+    for (let j = 0; j <= p.length; j++) {
+      const classes = [];
+      classes.push(dp[i][j] ? "cell-true" : "cell-false");
+      if (current.i === i && current.j === j) {
+        classes.push("cell-current");
+      }
+      if (sourceKey.has(`${i},${j}`)) {
+        classes.push("cell-source");
+      }
+      html += `<td class="${classes.join(" ")}"><span class="tiny">[${i},${j}]</span>${dp[i][j] ? "T" : "F"}</td>`;
+    }
+    html += "</tr>";
+  }
+  el.dpTable.innerHTML = html;
+}
+
+function renderSteps() {
+  el.stepList.innerHTML = "";
+  state.steps.forEach((step, idx) => {
+    const item = document.createElement("div");
+    item.className = "step" + (idx === state.index ? " active" : "");
+    item.innerHTML = `<div class="step-title">Step ${idx + 1}. ${step.title}</div><div class="step-log">${step.explain}</div>`;
+    el.stepList.appendChild(item);
+  });
+}
+
+function renderCurrent() {
+  if (!state.data || !state.steps.length) {
+    renderCode([], "当前步骤会高亮对应代码段，帮助你把“表格上的动作”和“代码里的 if/else”连起来。");
+    return;
+  }
+  const step = state.steps[state.index];
+  const sChar = step.i > 0 ? state.data.s[step.i - 1] : "∅";
+  const pChar = step.j > 0 ? state.data.p[step.j - 1] : "∅";
+
+  renderTable();
+  renderSteps();
+
+  el.cellValue.textContent = `dp[${step.i}][${step.j}]`;
+  el.cellSub.textContent = step.value ? "当前格子结果是 true" : "当前格子结果是 false";
+  el.charValue.textContent = `${sChar} / ${pChar}`;
+  el.charSub.textContent = step.phase === "base" ? "起点，不需要字符比较" : `当前看的是 s[${Math.max(0, step.i - 1)}] 和 p[${Math.max(0, step.j - 1)}]`;
+  el.sourceValue.textContent = (step.sources || []).length ? step.sources.map(pos => `dp[${pos.i}][${pos.j}]`).join(" , ") : "无";
+  el.sourceSub.textContent = step.phase === "star" ? "星号最多会有两条来源" : "看解释区理解这次为什么从这些格子转移";
+  el.answerValue.textContent = String(state.data.dp[state.data.s.length][state.data.p.length]);
+  el.answerSub.textContent = `右下角是 dp[${state.data.s.length}][${state.data.p.length}]`;
+  el.formulaBox.innerHTML = `<strong>${step.explain}</strong>`;
+  el.detailBox.innerHTML = step.detail;
+  renderCode(step.codeLines || [], step.codeText || "");
+}
+
+function stopPlay() {
+  if (state.timer !== null) {
+    clearInterval(state.timer);
+    state.timer = null;
+    el.play.textContent = "自动播放";
+  }
+}
+
+function build() {
+  stopPlay();
+  el.error.textContent = "";
+  try {
+    state.data = buildSteps(el.sInput.value.trim(), el.pInput.value.trim());
+    state.steps = state.data.steps;
+    state.index = 0;
+    renderCurrent();
+  } catch (err) {
+    state.data = null;
+    state.steps = [];
+    state.index = 0;
+    el.error.textContent = err.message;
+    el.dpTable.innerHTML = "";
+    el.stepList.innerHTML = "";
+    el.cellValue.textContent = "-";
+    el.cellSub.textContent = "先生成步骤";
+    el.charValue.textContent = "-";
+    el.charSub.textContent = "等待步骤";
+    el.sourceValue.textContent = "-";
+    el.sourceSub.textContent = "等待步骤";
+    el.answerValue.textContent = "-";
+    el.answerSub.textContent = "看右下角格子";
+    el.formulaBox.textContent = "点击“生成步骤”后，这里会解释为什么当前这个格子是 true 或 false。";
+    el.detailBox.textContent = "这题难在 * 不是单独匹配自己，而是控制前一个字符重复多少次。";
+    renderCode([], "当前步骤会高亮对应代码段，帮助你把“表格上的动作”和“代码里的 if/else”连起来。");
+  }
+}
+
+function nextStep() {
+  if (!state.steps.length) {
+    build();
+    return;
+  }
+  if (state.index < state.steps.length - 1) {
+    state.index++;
+    renderCurrent();
+  } else {
+    stopPlay();
+  }
+}
+
+function resetSteps() {
+  stopPlay();
+  if (!state.steps.length) {
+    build();
+    return;
+  }
+  state.index = 0;
+  renderCurrent();
+}
+
+function togglePlay() {
+  if (!state.steps.length) {
+    build();
+    if (!state.steps.length) {
+      return;
+    }
+  }
+  if (state.timer !== null) {
+    stopPlay();
+    return;
+  }
+  el.play.textContent = "暂停";
+  state.timer = setInterval(() => {
+    if (state.index >= state.steps.length - 1) {
+      stopPlay();
+      return;
+    }
+    nextStep();
+  }, 950);
+}
+
+document.querySelectorAll("[data-sample]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const [s, p] = btn.dataset.sample.split("|");
+    el.sInput.value = s;
+    el.pInput.value = p;
+    build();
+  });
+});
+
+el.build.addEventListener("click", build);
+el.play.addEventListener("click", togglePlay);
+el.step.addEventListener("click", nextStep);
+el.reset.addEventListener("click", resetSteps);
+
+renderCode([], "当前步骤会高亮对应代码段，帮助你把“表格上的动作”和“代码里的 if/else”连起来。");
+build();
+</script>
+</body>
+</html>
