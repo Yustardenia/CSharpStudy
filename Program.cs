@@ -1,26 +1,55 @@
-public class Solution {
-    public int MaxArea(int[] height)
+public class Solution
+{
+    public IList<IList<int>> ThreeSum(int[] nums)
     {
-        int ans = 0;
-        int i = 0;
-        int j = height.Length - 1;
-        while (i < j)
+        Array.Sort(nums);
+        IList<IList<int>> ans = new List<IList<int>>();
+        for (int i = 0; i < nums.Length - 2; i++)
         {
-            int h = Math.Min(height[i], height[j]);
-            int s = j - i;
-            int area = h * s;
-            ans = Math.Max(ans, area);
-            if (h == height[i])
+            if (nums[i] > 0)
             {
-                i++;
+                break;
             }
 
-            else
+            if (i > 0 && nums[i] == nums[i-1])
             {
-                j--;
+                continue;
             }
 
+            int left = i + 1;
+            int right = nums.Length - 1;
+            while (left < right)
+            {
+                if (nums[i] + nums[left] + nums[right] == 0)
+                {
+                    ans.Add(new List<int>()
+                    {
+                        nums[i],nums[left],nums[right]
+                    });
+                    left++;
+                    right--;
+                    while (left < right && nums[left] == nums[left-1])
+                    {
+                        left++;
+                    }
+                    while(left < right && nums[right] == nums[right+1])
+                    {
+                        right--;
+                    }
+                }
+
+                else if (nums[i] + nums[left] + nums[right] < 0)
+                {
+                    left++;
+                }
+
+                else 
+                {
+                    right--;
+                }
+            }
         }
+        
         return ans;
     }
 }
