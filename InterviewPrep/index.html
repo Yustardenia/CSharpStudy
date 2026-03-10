@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unity / C# 面试题库</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23f3ddcf'/%3E%3Cpath d='M17 19h10l6 22h-6l-1.2-4.5h-6.6L18 41h-6l5-22zm3 13h4.4L22.2 24h-.1L20 32z' fill='%23b5592f'/%3E%3Cpath d='M39 21h8.5c7 0 11.5 3.9 11.5 10.1S54.6 42 47.7 42H39V21zm6 5v11h2.2c3.7 0 5.8-1.9 5.8-5.6 0-3.6-2.2-5.4-5.8-5.4H45z' fill='%232d6c74'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="page-shell">
+  <header class="hero">
+    <div class="hero-copy">
+      <div class="hero-kicker">Interview Prep</div>
+      <h1>Unity / C# 面试题库</h1>
+      <p><span id="heroIntroCount">100</span> 道原创中文问答题，覆盖 Unity 引擎基础、性能与资源管理、项目场景题，以及 C# 核心语法与进阶工程能力。页面不内置标准答案，重点是让你先独立作答，再带着问题去问外部 AI 或复盘项目经验。</p>
+      <div class="hero-tags">
+        <span class="chip" id="heroUnityCount">Unity 60</span>
+        <span class="chip" id="heroCSharpCount">CSharp 40</span>
+        <span class="chip">纯静态单页</span>
+        <span class="chip">本地保存草稿</span>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-card">
+        <div class="stat-label">总题量</div>
+        <div class="stat-value" id="heroTotalCount">100</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">练习方式</div>
+        <div class="stat-value">自评</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">答题数据</div>
+        <div class="stat-value">本地存储</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel sidebar">
+      <section class="section">
+        <div class="section-title">练习模式</div>
+        <div class="mode-grid" id="modeButtons"></div>
+        <p class="section-hint">分类浏览适合系统复习，随机抽题适合突击模拟，收藏和错题模式适合回看重点。</p>
+      </section>
+
+      <section class="section">
+        <div class="section-title">筛选器</div>
+        <label for="sectionFilter">方向</label>
+        <select id="sectionFilter"></select>
+
+        <label for="categoryFilter">分类</label>
+        <select id="categoryFilter"></select>
+
+        <label for="difficultyFilter">难度</label>
+        <select id="difficultyFilter"></select>
+
+        <label for="keywordInput">关键词</label>
+        <input id="keywordInput" type="text" placeholder="例如：协程、Addressables、async">
+
+        <div class="inline-actions compact">
+          <button class="ghost" id="clearFiltersBtn" type="button">清空筛选</button>
+          <button class="ghost" id="randomWithinFilterBtn" type="button">当前范围随机</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">分类统计</div>
+        <div class="stat-list" id="categoryStats"></div>
+      </section>
+    </aside>
+
+    <main class="panel main-panel">
+      <section class="section main-header">
+        <div class="question-overview">
+          <div class="eyebrow" id="questionIndex">准备加载题库...</div>
+          <div class="meta-row">
+            <span class="meta-pill" id="questionSection">-</span>
+            <span class="meta-pill" id="questionCategory">-</span>
+            <span class="meta-pill" id="questionDifficulty">-</span>
+          </div>
+        </div>
+        <div class="status-row" id="questionStatus"></div>
+      </section>
+
+      <section class="section" id="questionContent">
+        <h2 class="question-title" id="questionPrompt">题目加载中...</h2>
+        <div class="chip-row" id="questionTags"></div>
+        <div class="question-tools">
+          <button class="secondary" id="toggleIntentBtn" type="button">显示考察点</button>
+          <button class="secondary" id="toggleFollowUpsBtn" type="button">显示追问</button>
+          <button class="ghost" id="copyQuestionBtn" type="button">复制题目</button>
+        </div>
+
+        <div class="detail-card hidden" id="intentPanel">
+          <div class="detail-title">考察点</div>
+          <ul class="bullet-list" id="intentList"></ul>
+        </div>
+
+        <div class="detail-card hidden" id="followUpsPanel">
+          <div class="detail-title">可能追问</div>
+          <ul class="bullet-list" id="followUpList"></ul>
+        </div>
+      </section>
+
+      <section class="section answer-section">
+        <div class="section-title">我的作答草稿</div>
+        <textarea id="draftInput" placeholder="先按自己的理解回答，整理出结构，再去问外部 AI 或对照项目经验补强。"></textarea>
+        <p class="section-hint">第一页不做自动评分。建议先答，再复制题目去问外部模型，或者拿这道题回忆你自己的项目经历。</p>
+
+        <div class="inline-actions">
+          <button class="primary" id="saveDraftBtn" type="button">保存当前作答草稿</button>
+          <button class="ghost" id="favoriteBtn" type="button">收藏</button>
+          <button class="ghost" id="wrongBtn" type="button">标记没答稳</button>
+          <button class="ghost" id="masteredBtn" type="button">标记已掌握</button>
+        </div>
+      </section>
+
+      <section class="section nav-section">
+        <div class="section-title">题目导航</div>
+        <div class="inline-actions">
+          <button class="secondary" id="prevBtn" type="button">上一题</button>
+          <button class="secondary" id="nextBtn" type="button">下一题</button>
+          <button class="primary" id="randomBtn" type="button">随机一题</button>
+        </div>
+      </section>
+
+      <section class="empty-state hidden" id="emptyState">
+        <div class="empty-title">当前筛选下没有可练习的题目</div>
+        <p>可以先清空筛选，或者切回分类浏览，再重新抽题。</p>
+        <div class="inline-actions">
+          <button class="secondary" id="emptyClearFiltersBtn" type="button">清空筛选</button>
+          <button class="ghost" id="switchBrowseBtn" type="button">切回分类浏览</button>
+        </div>
+      </section>
+    </main>
+
+    <aside class="panel side-panel">
+      <section class="section">
+        <div class="section-title">练习概览</div>
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="summary-label">当前题池</div>
+            <div class="summary-value" id="poolCount">0</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">收藏</div>
+            <div class="summary-value" id="favoriteCount">0</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">没答稳</div>
+            <div class="summary-value" id="wrongCount">0</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">已掌握</div>
+            <div class="summary-value" id="masteredCount">0</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">收藏夹</div>
+        <div class="mini-list" id="favoritesList"></div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">错题集</div>
+        <div class="mini-list" id="wrongList"></div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">最近练习</div>
+        <div class="mini-list" id="historyList"></div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<div class="toast" id="toast" aria-live="polite"></div>
+
+<script src="questions.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
