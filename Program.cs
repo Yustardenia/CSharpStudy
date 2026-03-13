@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 public class ListNode
 {
     public int val;
@@ -46,5 +47,20 @@ public class Solution
         }
 
         return newHead;
+=======
+public class Solution {
+    public int RemoveDuplicates(int[] nums) {
+
+        int k = 1;
+
+        for(int i = 1; i < nums.Length; i++){
+            if(nums[i] != nums[i-1]){
+                nums[k] = nums[i];
+                k++;
+            }
+        }
+
+        return k;
+>>>>>>> 610d5d1 (0313)
     }
 }
