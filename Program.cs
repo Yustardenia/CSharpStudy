@@ -1,43 +1,50 @@
+public class ListNode
+{
+    public int val;
+    public ListNode next;
+
+    public ListNode(int val = 0, ListNode next = null)
+    {
+        this.val = val;
+        this.next = next;
+    }
+}
+
 public class Solution
 {
-    public IList<string> LetterCombinations(string digits)
+    public ListNode MergeTwoLists(ListNode list1, ListNode list2)
     {
-        List<string> ans = new List<string>();
-        if (string.IsNullOrEmpty(digits))
+        if (list1 == null) return list2;
+        if (list2 == null) return list1;
+
+        ListNode newHead = new ListNode();
+        newHead.val = Math.Min(list1.val, list2.val);
+        ListNode last = newHead;
+
+        while (list1.next != null || list2.next != null)
         {
-            return ans;
-        }
-
-        Dictionary<char, string> dict = new Dictionary<char, string>()
-        {
-            {'2', "abc"},
-            {'3', "def"},
-            {'4', "ghi"},
-            {'5', "jkl"},
-            {'6', "mno"},
-            {'7', "pqrs"},
-            {'8', "tuv"},
-            {'9', "wxyz"}
-        };
-
-        ans.Add("");
-
-        foreach (char digit in digits)
-        {
-            string letters = dict[digit];
-            List<string> temp = new List<string>();
-
-            foreach (string prefix in ans)
+            ListNode nowNode = new ListNode();
+            last.next = nowNode;
+            if (list1.val > list2.val)
             {
-                foreach (char c in letters)
+                nowNode.val = list2.val;
+                if (list2.next != null)
                 {
-                    temp.Add(prefix + c);
+                    list2 = list2.next;
+                }
+            }
+            else
+            {
+                nowNode.val = list1.val;
+                if (list1.next != null)
+                {
+                    list1 = list1.next;
                 }
             }
 
-            ans = temp;
+            last = nowNode;
         }
 
-        return ans;
+        return newHead;
     }
 }
